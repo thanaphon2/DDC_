@@ -7,14 +7,21 @@ import * as path from 'path'
 import express,{Request, Response} from 'express'
 import cors from 'cors'
 import bodyParser from 'body-parser';
+import cron from 'node-cron'
 require('dotenv').config()
+
+const date = new Date()
+const date_str: any = format(date, 'yyyy-MM-dd')
+const hours: number = date.getUTCHours()
+const token: any = process.env.TOKEN_
+const lat: any = process.env.LAT
+const lot: any = process.env.LOT
 
 let app = express()
 app.use(express.json())
 app.use(cors())
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-
 console.log("Hello worde")
 
 import admin from 'firebase-admin';
@@ -102,8 +109,7 @@ app.post('/md', async (req: Request, res: Response) => {
 app.get('/datamd', async (req: Request, res: Response) => {
   try{
     const db = admin.firestore();
-    const Clou_showdata = await db.collection('Clou').get();
-
+    const Clou_showdata = await db.collection('Clou').get()
     const dataC = Clou_showdata.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
@@ -146,17 +152,36 @@ app.put('/dataeditmd/:id', async (req: Request, res: Response) => {
   }
 })
 
+cron.schedule('0 * * * *', async () => {
+  console.log("⏰ กำลังส่งข้อมูลทุกชั่วโมง")
+
+  try {
+    const URL_ = api_url(lat, lot, date_str, hours)
+    const result = await axios_api(URL_, token, axios)
+    const forecasts = result.data.WeatherForecasts;
+
+    const t = forecasts.map((m: any) => m.forecasts.map(async(md: any) => {
+      await axios.post('https://meteorologicaldepartment.vercel.app/md', {
+        time: admin.firestore.FieldValue.serverTimestamp(),
+        temperature: parseFloat(md.data.tc),
+        humidity: parseFloat(md.data.rh),
+        SLP: parseFloat(md.data.slp),
+        rain: parseFloat(md.data.rain),
+        windspeed10m: parseFloat(md.data.ws10m),
+        winddirection10m: parseFloat(md.data.wd10m),
+        lowcloud: parseFloat(md.data.cloudlow),
+        highcloud: parseFloat(md.data.cloudhigh)
+      })
+    }))
+  } catch (error) {
+    console.error("❌ เกิดข้อผิดพลาดในการส่งข้อมูล:", error)
+  }
+})
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 })
-// const date = new Date()
-// const date_str: any = format(date, 'yyyy-MM-dd')
-// const hours: number = date.getUTCHours()
-
-// const token: any = process.env.TOKEN_
-// const lat: any = process.env.LAT
-// const lot: any = process.env.LOT
 
 // const URL_ = api_url(lat, lot, date_str, hours)
 
