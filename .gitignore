@@ -1,4 +1,25 @@
-node_modules
+# Node.js
+node_modules/
+dist/
+build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
 # dotenv
 .env
 .env.*
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Optional: VS Code config
+.vscode/
+
+# Firebase service account key (ถ้าเผลอใส่ชื่อไว้)
+*firebase-adminsdk*.json
+*.key.json
+*.service-account.json
